@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationIcon>../../resources/Чудо Обувь.ico</ApplicationIcon>
+    <AssemblyName>ChudoObuv</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../ChudoObuv.Core/ChudoObuv.Core.csproj" /></ItemGroup>
+  <ItemGroup>
+    <Content Include="../../resources/Images/*.png" Link="Images/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../resources/Чудо Обувь.png" Link="logo.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../resources/Чудо Обувь.ico" Link="app.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
