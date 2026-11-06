@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../ChudoObuv.Core/ChudoObuv.Core.csproj" /></ItemGroup>
   <ItemGroup>
+    <Content Include="appsettings.local.json" Condition="Exists('appsettings.local.json')" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../resources/Images/*.png" Link="Images/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../resources/Чудо Обувь.png" Link="logo.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../resources/Чудо Обувь.ico" Link="app.ico" CopyToOutputDirectory="PreserveNewest" />

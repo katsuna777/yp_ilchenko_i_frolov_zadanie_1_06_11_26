@@ -33,10 +33,10 @@ public sealed record OrderDraft(DateTime Date, string LastName, string FirstName
 
 public sealed class DatabaseSettings
 {
-    public string Server { get; set; } = "127.0.0.1";
+    public string Server { get; set; } = "177.1.181.207";
     public uint Port { get; set; } = 3306;
-    public string Database { get; set; } = "chudo_obuv";
-    public string Username { get; set; } = "root";
+    public string Database { get; set; } = "isp-44_ilchenko_dm_chudo_obuv";
+    public string Username { get; set; } = "isp-44_ilchenko_dm";
     public string Password { get; set; } = "";
     public string ConnectionString(bool withDatabase = true) => new MySqlConnectionStringBuilder
     {

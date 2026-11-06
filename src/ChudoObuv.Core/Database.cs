@@ -21,8 +21,8 @@ public sealed class Database(string connectionString)
 
     public static void Initialize(DatabaseSettings settings)
     {
-        if (!Regex.IsMatch(settings.Database, @"\A[a-zA-Z][a-zA-Z0-9_]{0,63}\z"))
-            throw new InvalidOperationException("Название базы: латинские буквы, цифры и знак подчёркивания, до 64 символов.");
+        if (!Regex.IsMatch(settings.Database, @"\A[a-zA-Z][a-zA-Z0-9_-]{0,63}\z"))
+            throw new InvalidOperationException("Название базы: латинские буквы, цифры знак подчёркивания и дефис, до 64 символов.");
         using var c = new MySqlConnection(settings.ConnectionString(false));
         c.Open();
         using (var check = new MySqlCommand("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=@db", c))
