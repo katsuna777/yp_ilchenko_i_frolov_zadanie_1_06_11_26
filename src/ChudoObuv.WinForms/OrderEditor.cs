@@ -41,7 +41,11 @@ public partial class OrderEditor : Form
         await Ui.Run(this, async () =>
         {
             catalog = await Task.Run(store.Catalog);
-            if (order != null) lines.AddRange(order.Lines);
+            if (order != null)
+            {
+                foreach (var line in order.Lines)
+                    lines.Add(new OrderLine(line.StockItemId, line.ProductName, line.Size, line.Quantity, line.UnitPrice));
+            }
             else foreach (var line in initial)
             {
                 var stock = catalog.Stock.Single(s => s.Id == line.StockItemId);
@@ -107,7 +111,11 @@ public partial class OrderEditor : Form
         var existing = lines.FirstOrDefault(l => l.StockItemId == s.Stock.Id);
         int qty = (existing?.Quantity ?? 0) + (int)quantity.Value;
         if (qty > s.Available) { Ui.Error(new InvalidOperationException($"Доступно для этого заказа: {s.Available} пар.")); return; }
-        if (existing is null) lines.Add(new(s.Stock.Id, p.Product.Name, s.Stock.Size, qty, p.Product.Price));
+        if (existing is null)
+        {
+            decimal price = order?.Lines.FirstOrDefault(line => line.StockItemId == s.Stock.Id)?.UnitPrice ?? p.Product.Price;
+            lines.Add(new OrderLine(s.Stock.Id, p.Product.Name, s.Stock.Size, qty, price));
+        }
         else existing.Quantity = qty;
         DrawLines();
     }
@@ -121,14 +129,16 @@ public partial class OrderEditor : Form
     private async Task Save()
     {
         if (!ValidateChildren() || !grid.EndEdit()) return;
+        bool saved = false;
         await Ui.Run(this, async () =>
         {
             var draft = new OrderDraft(date.Value, last.Text, first.Text, patronymic.Text,
                 lines.Select(l => new RequestedLine(l.StockItemId, l.Quantity)).ToList(), order?.Id, order?.Version ?? 0);
             int id = await Task.Run(() => store.SaveOrder(user, draft));
-            MessageBox.Show($"Заказ №{id} сохранён. Сумма: {lines.Sum(l => l.Total):N2} ₽.", "Заказ оформлен", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            DialogResult = DialogResult.OK;
+            MessageBox.Show($"Заказ №{id} сохранён.", "Заказ оформлен", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            saved = true;
         });
+        if (saved) DialogResult = DialogResult.OK;
     }
     private class ProductChoice
     {

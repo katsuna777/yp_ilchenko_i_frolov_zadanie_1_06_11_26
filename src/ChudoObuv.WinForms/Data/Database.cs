@@ -13,8 +13,16 @@ public class Database
     public MySqlConnection Open()
     {
         var connection = new MySqlConnection(connectionString);
-        try { connection.Open(); return connection; }
-        catch { connection.Dispose(); throw; }
+        try
+        {
+            connection.Open();
+            return connection;
+        }
+        catch
+        {
+            connection.Dispose();
+            throw;
+        }
     }
 
     public void Check()

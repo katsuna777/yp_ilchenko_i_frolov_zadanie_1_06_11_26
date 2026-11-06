@@ -14,9 +14,10 @@ public partial class MainForm : Form
 
     public MainForm() : this(new Store(new Database(DatabaseConfig.ConnectionString))) { }
 
-    public MainForm(Store store)
+    public MainForm(Store store, User? user = null)
     {
         this.store = store;
+        this.user = user;
         InitializeComponent();
         logo.Image = Ui.LoadImage("logo.png");
         grid.RowTemplate.Height = 90;
@@ -51,12 +52,17 @@ public partial class MainForm : Form
 
     private async Task Reload() => await Ui.Run(this, async () =>
     {
-        catalog = await Task.Run(store.Catalog); loading = true;
-        Fill(category, "Все категории", catalog.Products.Select(p => p.Category));
-        Fill(subcategory, "Все виды", catalog.Products.Select(p => p.Subcategory));
-        Fill(manufacturer, "Все производители", catalog.Products.Select(p => p.Manufacturer));
-        Fill(size, "Любой", catalog.Stock.Select(s => s.Size));
-        loading = false; Filter();
+        catalog = await Task.Run(store.Catalog);
+        loading = true;
+        try
+        {
+            Fill(category, "Все категории", catalog.Products.Select(p => p.Category));
+            Fill(subcategory, "Все виды", catalog.Products.Select(p => p.Subcategory));
+            Fill(manufacturer, "Все производители", catalog.Products.Select(p => p.Manufacturer));
+            Fill(size, "Любой", catalog.Stock.Select(s => s.Size));
+        }
+        finally { loading = false; }
+        Filter();
     });
     private static void Fill(ComboBox combo, string all, IEnumerable<string> values)
     {
@@ -122,13 +128,9 @@ public partial class MainForm : Form
     }
     private void ChangeUser()
     {
-        if (user is not null)
-        {
-            if (basket.Count > 0 && MessageBox.Show("При выходе корзина будет очищена. Выйти?", "Выход", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
-            user = null; basket.Clear();
-        }
-        else { using var form = new LoginForm(store); if (form.ShowDialog(this) == DialogResult.OK) user = form.User; }
-        UpdateUser(); Filter();
+        if (basket.Count > 0 && MessageBox.Show("При выходе корзина будет очищена. Выйти?", "Выход", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+        DialogResult = DialogResult.Retry;
+        Close();
     }
     private void UpdateUser()
     {

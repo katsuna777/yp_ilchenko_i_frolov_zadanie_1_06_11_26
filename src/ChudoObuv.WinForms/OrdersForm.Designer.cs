@@ -127,7 +127,7 @@ partial class OrdersForm
         ClientSize = new Size(1080, 640);
         MinimumSize = new Size(1080, 640);
         Font = new Font("Segoe UI", 9F);
-        Text = "Итого, ₽ | Чудо Обувь";
+        Text = "Заказы | Чудо Обувь";
         StartPosition = FormStartPosition.CenterScreen;
         Controls.Add(title);
         Controls.Add(search);

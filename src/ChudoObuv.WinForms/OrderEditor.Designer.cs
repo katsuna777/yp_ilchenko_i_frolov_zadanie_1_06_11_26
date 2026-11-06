@@ -196,7 +196,7 @@ partial class OrderEditor
         ClientSize = new Size(1080, 645);
         MinimumSize = new Size(1080, 645);
         Font = new Font("Segoe UI", 9F);
-        Text = "Сумма, ₽ | Чудо Обувь";
+        Text = "Заказ | Чудо Обувь";
         StartPosition = FormStartPosition.CenterScreen;
         Controls.Add(title);
         Controls.Add(lastLabel);

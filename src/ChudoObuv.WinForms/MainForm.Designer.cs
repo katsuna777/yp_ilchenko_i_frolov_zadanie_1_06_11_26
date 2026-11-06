@@ -223,7 +223,7 @@ partial class MainForm
         ClientSize = new Size(1125, 720);
         MinimumSize = new Size(1125, 720);
         Font = new Font("Segoe UI", 9F);
-        Text = "Пар | Чудо Обувь";
+        Text = "Каталог | Чудо Обувь";
         StartPosition = FormStartPosition.CenterScreen;
         Controls.Add(logo);
         Controls.Add(title);

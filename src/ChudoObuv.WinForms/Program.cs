@@ -1,4 +1,5 @@
 using System.Globalization;
+using ChudoObuv.WinForms.Data;
 
 namespace ChudoObuv.WinForms;
 
@@ -10,6 +11,8 @@ internal static class Program
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.GetCultureInfo("ru-RU");
         ApplicationConfiguration.Initialize();
         Application.ThreadException += (_, e) => Ui.Error(e.Exception);
-        Application.Run(new MainForm());
+        var database = new Database(DatabaseConfig.ConnectionString);
+        var store = new Store(database);
+        Application.Run(new LoginForm(store));
     }
 }
