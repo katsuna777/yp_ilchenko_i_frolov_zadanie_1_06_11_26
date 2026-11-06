@@ -1,63 +1,52 @@
-using ChudoObuv.Core;
+using ChudoObuv.WinForms.Data;
 
 namespace ChudoObuv.WinForms;
 
-internal sealed class MainForm : Form
+public partial class MainForm : Form
 {
     private readonly Store store;
     private User? user;
-    private Catalog catalog = new([], []);
-    private readonly List<RequestedLine> basket = [];
-    private readonly DataGridView grid = Ui.Grid();
-    private readonly TextBox search = new() { Width = 250, PlaceholderText = "Название, описание, производитель" };
-    private readonly ComboBox category = Ui.Combo(), subcategory = Ui.Combo(), manufacturer = Ui.Combo(), size = Ui.Combo(100), sort = Ui.Combo(210);
-    private readonly CheckBox available = new() { Text = "В наличии", AutoSize = true, Margin = new(6, 10, 6, 4) };
-    private readonly Label identity = Ui.Label("Гость"), count = Ui.Label("");
-    private readonly TextBox detail = new() { Dock = DockStyle.Fill, ReadOnly = true, Multiline = true, ScrollBars = ScrollBars.Vertical, BorderStyle = BorderStyle.None, BackColor = Ui.Paper };
-    private readonly FlowLayoutPanel filters;
-    private readonly Button loginButton, basketButton, ordersButton, add;
-    private readonly ComboBox orderSize = Ui.Combo(190);
-    private readonly NumericUpDown quantity = new() { Minimum = 1, Maximum = 100000, Width = 75, Margin = new(5, 8, 5, 5) };
-    private readonly Dictionary<int, Image?> images = [];
+    private Catalog catalog = new Catalog(new List<Product>(), new List<StockItem>());
+    private readonly List<RequestedLine> basket = new List<RequestedLine>();
+    private readonly Dictionary<int, Image?> images = new Dictionary<int, Image?>();
     private bool loading;
     private Product? Selected => grid.CurrentRow?.Tag as Product;
 
+    public MainForm() : this(new Store(new Database(DatabaseConfig.ConnectionString))) { }
+
     public MainForm(Store store)
     {
-        this.store = store; Ui.Setup(this, "Каталог");
-        var layout = Ui.Layout(SizeType.AutoSize, SizeType.AutoSize, SizeType.AutoSize, SizeType.Percent, SizeType.AutoSize);
-        var logo = new PictureBox { Size = new(56, 56), SizeMode = PictureBoxSizeMode.Zoom, Image = Ui.LoadImage("logo.png") };
-        loginButton = Ui.Button("Войти", (_, _) => ChangeUser());
-        basketButton = Ui.Button("Корзина (0)", async (_, _) => await OpenBasket(), true);
-        ordersButton = Ui.Button("Заказы", async (_, _) =>
-        {
-            if (user is null) return;
-            using var form = new OrdersForm(store, user); form.ShowDialog(this); await Reload();
-        });
-        layout.Controls.Add(Ui.Bar(logo, new Label { Text = "Чудо Обувь", AutoSize = true, Font = new(Font.FontFamily, 25, FontStyle.Bold), Margin = new(12, 7, 25, 4) }, identity, loginButton, basketButton, ordersButton,
-            Ui.Button("Обновить", async (_, _) => await Reload())), 0, 0);
-        sort.Items.AddRange(["По названию", "Цена по возрастанию", "Цена по убыванию", "По остатку"]); sort.SelectedIndex = 0;
-        filters = Ui.Bar(Ui.Label("Поиск"), search, Ui.Label("Категория"), category, Ui.Label("Подкатегория"), subcategory,
-            Ui.Label("Производитель"), manufacturer, Ui.Label("Размер"), size, available, sort);
-        layout.Controls.Add(filters, 0, 1); layout.Controls.Add(count, 0, 2);
-        grid.Columns.Add(new DataGridViewImageColumn { Name = "image", HeaderText = "Фото", ImageLayout = DataGridViewImageCellLayout.Zoom, FillWeight = 45, DefaultCellStyle = new() { NullValue = null } });
-        Ui.Column(grid, "name", "Модель", 160); Ui.Column(grid, "category", "Категория / вид", 80);
-        Ui.Column(grid, "manufacturer", "Производство", 75); Ui.Column(grid, "price", "Цена, ₽", 48, "N2");
-        Ui.Column(grid, "sizes", "Доступные размеры", 100); Ui.Column(grid, "stock", "Пар", 30);
-        grid.RowTemplate.Height = 100; grid.SelectionChanged += (_, _) => ShowDetail();
-        layout.Controls.Add(grid, 0, 3);
-        var bottom = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, Height = 170, AutoSize = false };
-        bottom.RowStyles.Add(new(SizeType.Percent, 100)); bottom.RowStyles.Add(new(SizeType.AutoSize));
-        bottom.Controls.Add(detail, 0, 0);
-        add = Ui.Button("Добавить в корзину", (_, _) => AddToBasket(), true);
-        bottom.Controls.Add(Ui.Bar(Ui.Label("Размер"), orderSize, Ui.Label("Количество"), quantity, add), 0, 1);
-        layout.Controls.Add(bottom, 0, 4); Controls.Add(layout);
-        search.TextChanged += (_, _) => Filter();
-        foreach (var combo in new[] { category, subcategory, manufacturer, size, sort }) combo.SelectedIndexChanged += (_, _) => Filter();
-        available.CheckedChanged += (_, _) => Filter();
-        orderSize.SelectedIndexChanged += (_, _) => { if (orderSize.SelectedItem is SizeChoice s) quantity.Maximum = Math.Max(1, s.Available); };
-        UpdateUser(); Shown += async (_, _) => await Reload();
-        FormClosed += (_, _) => { foreach (var image in images.Values) image?.Dispose(); logo.Image?.Dispose(); };
+        this.store = store;
+        InitializeComponent();
+        logo.Image = Ui.LoadImage("logo.png");
+        grid.RowTemplate.Height = 90;
+        sort.Items.AddRange(new object[] { "По названию", "Цена по возрастанию", "Цена по убыванию", "По остатку" });
+        sort.SelectedIndex = 0;
+        UpdateUser();
+    }
+
+    private async void MainForm_Shown(object? sender, EventArgs e) { await Reload(); }
+    private void LoginButton_Click(object? sender, EventArgs e) { ChangeUser(); }
+    private async void BasketButton_Click(object? sender, EventArgs e) { await OpenBasket(); }
+    private async void RefreshButton_Click(object? sender, EventArgs e) { await Reload(); }
+    private void AddButton_Click(object? sender, EventArgs e) { AddToBasket(); }
+    private void Grid_SelectionChanged(object? sender, EventArgs e) { ShowDetail(); }
+    private void Filters_Changed(object? sender, EventArgs e) { Filter(); }
+    private void OrderSize_Changed(object? sender, EventArgs e)
+    {
+        if (orderSize.SelectedItem is SizeChoice choice)
+            quantity.Maximum = Math.Max(1, choice.Available);
+    }
+    private async void OrdersButton_Click(object? sender, EventArgs e)
+    {
+        if (user == null) return;
+        using (var form = new OrdersForm(store, user)) form.ShowDialog(this);
+        await Reload();
+    }
+    private void MainForm_FormClosed(object? sender, FormClosedEventArgs e)
+    {
+        foreach (var image in images.Values) image?.Dispose();
+        logo.Image?.Dispose();
     }
 
     private async Task Reload() => await Ui.Run(this, async () =>
@@ -155,6 +144,17 @@ internal sealed class MainForm : Form
         if (form.ShowDialog(this) == DialogResult.OK) basket.Clear();
         UpdateUser(); await Reload();
     }
-    private sealed record SizeChoice(int Id, string Size, int Available)
-    { public override string ToString() => $"{Size} — {Available} пар"; }
+    private class SizeChoice
+    {
+        public int Id { get; }
+        public string Size { get; }
+        public int Available { get; }
+        public SizeChoice(int id, string size, int available)
+        {
+            Id = id;
+            Size = size;
+            Available = available;
+        }
+        public override string ToString() => Size + " — " + Available + " пар";
+    }
 }

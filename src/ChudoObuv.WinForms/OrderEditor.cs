@@ -1,85 +1,93 @@
-using ChudoObuv.Core;
+using ChudoObuv.WinForms.Data;
 
 namespace ChudoObuv.WinForms;
 
-internal sealed class OrderEditor : Form
+public partial class OrderEditor : Form
 {
     private readonly Store store;
     private readonly User user;
     private readonly Order? order;
     private readonly bool readOnly;
-    private Catalog catalog = new([], []);
-    private readonly List<OrderLine> lines = [];
-    private readonly TextBox last = new() { Width = 180, MaxLength = 100 }, first = new() { Width = 170, MaxLength = 100 }, patronymic = new() { Width = 180, MaxLength = 100 };
-    private readonly DateTimePicker date = new() { Format = DateTimePickerFormat.Short, Width = 125 };
-    private readonly ComboBox product = Ui.Combo(480), size = Ui.Combo(170);
-    private readonly NumericUpDown quantity = new() { Minimum = 1, Maximum = 100000, Width = 85, Margin = new(4, 8, 4, 4) };
-    private readonly DataGridView grid = Ui.Grid();
-    private readonly Label total = Ui.Label("");
+    private Catalog catalog = new Catalog(new List<Product>(), new List<StockItem>());
+    private readonly List<OrderLine> lines = new List<OrderLine>();
     private readonly IReadOnlyList<RequestedLine> initial;
 
+    public OrderEditor() : this(new Store(new Database(DatabaseConfig.ConnectionString)), new User(0, "", "", "", "", Role.Customer)) { }
     public OrderEditor(Store store, User user, Order? order = null, bool readOnly = false, IReadOnlyList<RequestedLine>? initial = null)
     {
-        this.store = store; this.user = user; this.order = order; this.readOnly = readOnly;
-        this.initial = initial ?? [];
-        Ui.Setup(this, order is null ? "Оформление заказа" : $"Заказ №{order.Id}", 1120, 730);
-        var layout = Ui.Layout(SizeType.AutoSize, SizeType.AutoSize, SizeType.AutoSize, SizeType.Percent, SizeType.AutoSize);
-        layout.Controls.Add(new Label { Text = order is null ? "Новый заказ" : $"Заказ №{order.Id}", Font = new(Font.FontFamily, 22, FontStyle.Bold), AutoSize = true }, 0, 0);
-        last.Text = order?.LastName ?? user.LastName; first.Text = order?.FirstName ?? user.FirstName; patronymic.Text = order?.Patronymic ?? user.Patronymic;
+        this.store = store;
+        this.user = user;
+        this.order = order;
+        this.readOnly = readOnly;
+        this.initial = initial ?? new List<RequestedLine>();
+        InitializeComponent();
+        title.Text = order == null ? "Новый заказ" : "Заказ №" + order.Id;
+        last.Text = order?.LastName ?? user.LastName;
+        first.Text = order?.FirstName ?? user.FirstName;
+        patronymic.Text = order?.Patronymic ?? user.Patronymic;
         date.Value = order?.Date ?? DateTime.Now;
         last.ReadOnly = first.ReadOnly = patronymic.ReadOnly = readOnly || !user.CanManageOrders;
         date.Enabled = !readOnly && user.CanManageOrders;
-        layout.Controls.Add(Ui.Bar(Ui.Label("Фамилия"), last, Ui.Label("Имя"), first, Ui.Label("Отчество"), patronymic, Ui.Label("Дата"), date), 0, 1);
-        var picker = Ui.Bar(product, size, Ui.Label("Пар"), quantity, Ui.Button("Добавить", (_, _) => Add(), true)); picker.Visible = !readOnly;
-        layout.Controls.Add(picker, 0, 2);
-        Ui.Column(grid, "name", "Модель", 220); Ui.Column(grid, "size", "Размер", 45); Ui.Column(grid, "quantity", "Количество", 65);
-        Ui.Column(grid, "price", "Цена за пару, ₽", 80, "N2"); Ui.Column(grid, "total", "Сумма, ₽", 80, "N2");
+        picker.Visible = remove.Visible = save.Visible = !readOnly;
+        save.Text = order == null ? "Оформить заказ" : "Сохранить изменения";
         grid.ReadOnly = readOnly;
-        foreach (DataGridViewColumn c in grid.Columns) c.ReadOnly = c.Name != "quantity" || readOnly;
+        foreach (DataGridViewColumn column in grid.Columns)
+            column.ReadOnly = column.Name != "quantity" || readOnly;
         grid.EditMode = DataGridViewEditMode.EditOnEnter;
-        grid.CellValidating += (_, e) =>
-        {
-            if (readOnly || e.ColumnIndex != 2) return;
-            if (!int.TryParse(e.FormattedValue?.ToString(), out int qty) || qty < 1 || qty > 100000)
-            { e.Cancel = true; grid.Rows[e.RowIndex].ErrorText = "Введите целое количество от 1 до 100000."; }
-            else grid.Rows[e.RowIndex].ErrorText = "";
-        };
-        grid.CellEndEdit += (_, e) =>
-        {
-            if (e.RowIndex < 0 || e.RowIndex >= lines.Count || e.ColumnIndex != 2) return;
-            if (int.TryParse(grid.Rows[e.RowIndex].Cells[2].Value?.ToString(), out int qty) && qty > 0)
-            {
-                lines[e.RowIndex] = lines[e.RowIndex] with { Quantity = qty };
-                grid.Rows[e.RowIndex].Cells[4].Value = lines[e.RowIndex].Total; UpdateTotal();
-            }
-        };
-        grid.DataError += (_, e) => { e.ThrowException = false; };
-        layout.Controls.Add(grid, 0, 3);
-        var remove = Ui.Button("Удалить позицию", (_, _) =>
-        {
-            if (grid.CurrentRow is null) return;
-            grid.CancelEdit(); lines.RemoveAt(grid.CurrentRow.Index); DrawLines();
-        }); remove.Visible = !readOnly; remove.CausesValidation = false;
-        var save = Ui.Button(order is null ? "Оформить заказ" : "Сохранить изменения", async (_, _) => await Save(), true); save.Visible = !readOnly;
-        var close = Ui.Button(readOnly ? "Закрыть" : "Отмена", (_, _) => { DialogResult = DialogResult.Cancel; Close(); }); close.CausesValidation = false;
-        layout.Controls.Add(Ui.Bar(total, remove, save, close), 0, 4);
-        Controls.Add(layout);
-        product.SelectedIndexChanged += (_, _) => FillSizes();
-        Shown += async (_, _) => await Ui.Run(this, async () =>
+    }
+
+    private async void OrderEditor_Shown(object? sender, EventArgs e)
+    {
+        await Ui.Run(this, async () =>
         {
             catalog = await Task.Run(store.Catalog);
-            if (order is not null) lines.AddRange(order.Lines);
-            else foreach (var line in this.initial)
+            if (order != null) lines.AddRange(order.Lines);
+            else foreach (var line in initial)
             {
                 var stock = catalog.Stock.Single(s => s.Id == line.StockItemId);
-                var p = catalog.Products.Single(p => p.Id == stock.ProductId);
-                lines.Add(new(stock.Id, p.Name, stock.Size, line.Quantity, p.Price));
+                var model = catalog.Products.Single(p => p.Id == stock.ProductId);
+                lines.Add(new OrderLine(stock.Id, model.Name, stock.Size, line.Quantity, model.Price));
             }
-            foreach (var p in catalog.Products) product.Items.Add(new ProductChoice(p));
+            foreach (var model in catalog.Products) product.Items.Add(new ProductChoice(model));
             if (product.Items.Count > 0) product.SelectedIndex = 0;
             DrawLines();
         });
     }
+    private void Product_SelectedIndexChanged(object? sender, EventArgs e) { FillSizes(); }
+    private void AddButton_Click(object? sender, EventArgs e) { Add(); }
+    private async void SaveButton_Click(object? sender, EventArgs e) { await Save(); }
+    private void CloseButton_Click(object? sender, EventArgs e) { DialogResult = DialogResult.Cancel; Close(); }
+    private void RemoveButton_Click(object? sender, EventArgs e)
+    {
+        if (grid.CurrentRow == null) return;
+        grid.CancelEdit();
+        lines.RemoveAt(grid.CurrentRow.Index);
+        DrawLines();
+    }
+    private void Grid_CellValidating(object? sender, DataGridViewCellValidatingEventArgs e)
+    {
+        if (readOnly || e.ColumnIndex != 2) return;
+        int qty;
+        if (!int.TryParse(e.FormattedValue?.ToString(), out qty) || qty < 1 || qty > 100000)
+        {
+            e.Cancel = true;
+            grid.Rows[e.RowIndex].ErrorText = "Введите целое количество от 1 до 100000.";
+        }
+        else grid.Rows[e.RowIndex].ErrorText = "";
+    }
+    private void Grid_CellEndEdit(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.RowIndex >= lines.Count || e.ColumnIndex != 2) return;
+        int qty;
+        if (int.TryParse(grid.Rows[e.RowIndex].Cells[2].Value?.ToString(), out qty) && qty > 0)
+        {
+            lines[e.RowIndex].Quantity = qty;
+            grid.Rows[e.RowIndex].Cells[4].Value = lines[e.RowIndex].Total;
+            UpdateTotal();
+        }
+    }
+    private void Grid_DataError(object? sender, DataGridViewDataErrorEventArgs e) { e.ThrowException = false; }
+
     private void FillSizes()
     {
         size.Items.Clear();
@@ -100,7 +108,7 @@ internal sealed class OrderEditor : Form
         int qty = (existing?.Quantity ?? 0) + (int)quantity.Value;
         if (qty > s.Available) { Ui.Error(new InvalidOperationException($"Доступно для этого заказа: {s.Available} пар.")); return; }
         if (existing is null) lines.Add(new(s.Stock.Id, p.Product.Name, s.Stock.Size, qty, p.Product.Price));
-        else lines[lines.IndexOf(existing)] = existing with { Quantity = qty };
+        else existing.Quantity = qty;
         DrawLines();
     }
     private void DrawLines()
@@ -122,6 +130,17 @@ internal sealed class OrderEditor : Form
             DialogResult = DialogResult.OK;
         });
     }
-    private sealed record ProductChoice(Product Product) { public override string ToString() => $"{Product.Name} / {Product.Manufacturer}"; }
-    private sealed record StockChoice(StockItem Stock, int Available) { public override string ToString() => $"{Stock.Size} — доступно {Available}"; }
+    private class ProductChoice
+    {
+        public Product Product { get; }
+        public ProductChoice(Product product) { Product = product; }
+        public override string ToString() => Product.Name + " / " + Product.Manufacturer;
+    }
+    private class StockChoice
+    {
+        public StockItem Stock { get; }
+        public int Available { get; }
+        public StockChoice(StockItem stock, int available) { Stock = stock; Available = available; }
+        public override string ToString() => Stock.Size + " — доступно " + Available;
+    }
 }

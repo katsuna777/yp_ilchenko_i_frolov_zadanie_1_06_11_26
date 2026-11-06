@@ -8,3 +8,15 @@ appsettings.local.json
 *.log
 .DS_Store
 artifacts/
+
+# Локальные материалы, не входящие в учебный проект
+README.md
+docs/
+scripts/
+tests/
+.github/
+src/ChudoObuv.Core/
+resources/*.xlsx
+resources/picture.png
+database/schema.sql
+database/seed.sql

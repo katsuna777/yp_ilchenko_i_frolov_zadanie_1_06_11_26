@@ -5,13 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A1BD1ABE-A5D6-4FD5-89A4-3416D860B9EB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChudoObuv.Core", "src\ChudoObuv.Core\ChudoObuv.Core.csproj", "{52A6E508-A213-4051-B88F-E26F2CE1401D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChudoObuv.WinForms", "src\ChudoObuv.WinForms\ChudoObuv.WinForms.csproj", "{F8C5B1D2-9C42-4886-BFEC-43CB7D61528A}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A8CFC559-72C2-4C5E-A34C-B6D127B842BD}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChudoObuv.IntegrationTests", "tests\ChudoObuv.IntegrationTests\ChudoObuv.IntegrationTests.csproj", "{3BBC7D47-07C0-410C-9782-9F17CAF0297C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,22 +16,12 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{52A6E508-A213-4051-B88F-E26F2CE1401D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{52A6E508-A213-4051-B88F-E26F2CE1401D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{52A6E508-A213-4051-B88F-E26F2CE1401D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{52A6E508-A213-4051-B88F-E26F2CE1401D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F8C5B1D2-9C42-4886-BFEC-43CB7D61528A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F8C5B1D2-9C42-4886-BFEC-43CB7D61528A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F8C5B1D2-9C42-4886-BFEC-43CB7D61528A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F8C5B1D2-9C42-4886-BFEC-43CB7D61528A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3BBC7D47-07C0-410C-9782-9F17CAF0297C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3BBC7D47-07C0-410C-9782-9F17CAF0297C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3BBC7D47-07C0-410C-9782-9F17CAF0297C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3BBC7D47-07C0-410C-9782-9F17CAF0297C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{52A6E508-A213-4051-B88F-E26F2CE1401D} = {A1BD1ABE-A5D6-4FD5-89A4-3416D860B9EB}
 		{F8C5B1D2-9C42-4886-BFEC-43CB7D61528A} = {A1BD1ABE-A5D6-4FD5-89A4-3416D860B9EB}
-		{3BBC7D47-07C0-410C-9782-9F17CAF0297C} = {A8CFC559-72C2-4C5E-A34C-B6D127B842BD}
 	EndGlobalSection
 EndGlobal

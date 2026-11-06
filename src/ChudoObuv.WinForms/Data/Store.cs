@@ -1,11 +1,17 @@
 using System.Data;
 using MySqlConnector;
 
-namespace ChudoObuv.Core;
+namespace ChudoObuv.WinForms.Data;
 
 /// <summary>All writes enforce roles and stock rules here, independently of the forms.</summary>
-public sealed class Store(Database db)
+public class Store
 {
+    private readonly Database db;
+
+    public Store(Database db)
+    {
+        this.db = db;
+    }
     public User? Login(string login)
     {
         using var c = db.Open();
